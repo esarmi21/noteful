@@ -4,7 +4,7 @@ import NotesList from '../NotesList/NotesList';
 import ApiContext from '../ApiContext'
 
 class Home extends React.Component {
-    
+
     static contextType = ApiContext;
 
     componentDidMount() {
@@ -14,8 +14,12 @@ class Home extends React.Component {
     render() {
         return (
             <main className="main-container">
-                <Sidebar />
-                <NotesList />
+                {/* <SideBarError> */}
+                    <Sidebar />
+                {/* </SideBarError>
+                <NotesListError> */}
+                    <NotesList />
+                {/* </NotesListError> */}
             </main>
         )
     }

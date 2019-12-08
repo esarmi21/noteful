@@ -1,105 +1,82 @@
 import React from 'react';
 import ApiContext from './ApiContext'
-import NotefulForm from './NotefulForm'
+import PropTypes from 'prop-types';
 
-class AddFolder extends React.Component{
-constructor(){
-    super();
-    this.state = {
-      error: null,
-      name: '',
-      nameValid: false,
-      validationMessage: ''
-    };
-  }
-
-  isNameValid = event => {
-    event.preventDefault();
-    if (!this.state.name) {
-      this.setState({
-        validationMessage: 'Folder name can not be blank.',
-        nameValid: false
-      });
-    } else {
-      this.setState(
-        {
-          validationMessage: '',
-          nameValid: true
-        },
-        this.handleAddFolder()
-      );
+class AddFolder extends React.Component {
+    state = {
+        name: "",
+        isTouched: false
     }
-  };
 
-static contextType = ApiContext;
+    static contextType = ApiContext;
 
-handleAddFolder = () => {
-    const options = {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
+    generateFolderId = () => {
+        //this function will generate a random folderId
+        let folderId = Math.ceil(Math.random()*1000000);
+        return folderId;
+    }
+
+    handleSubmitAddFolder = (e) => {
+        //this function will make a post call to add a folder
+        e.preventDefault();
+        let newFolder = {
+            id: this.generateFolderId().toString(),
             name: this.state.name
-        })
-    }
-        console.log(options)
-    fetch('http://localhost:9090/folders', options)
-      .then(res => {
-        if (!res.ok) {
-          throw new Error('Something went wrong');
+        };
+
+        const options = {
+            method: 'POST',
+            headers: {
+                'content-type': 'application/json'
+            },
+            body: JSON.stringify(newFolder)
         }
-        return res;
-      })
-      .then(res => res.json())
-    //   .then(data => {
-    //     this.context.handleAddFolder(data);
-    //   })
-      .catch(err => {
+        fetch('http://localhost:9090/folders', options)
+            .then(res => {
+                if (!res.ok) {
+                    throw new Error(`Failed to add folder`);
+                }
+                return res.json()
+            })
+            .then(data => {
+                this.props.addNewFolder(data);
+                this.props.toggleFolderFormView();
+            })
+            .catch(error => console.log(error));
+    }
+    
+    onNameChange = (value) => {
         this.setState({
-          error: err.message
+            name: value,
+            isTouched: true
         });
-      });
-  };
+    }
 
+    validateFolderName() {
+        const folderName = this.state.name;
+        if(folderName.length < 1) {
+            return "You must enter a folder name";
+        }
+    }
 
-  render() {
-    return (
-      <section className='AddFolder'>
-        <h2>Create a folder</h2>
-        <NotefulForm
-          onSubmit={event => {
-            this.isNameValid(event);
-          }}
-        >
-          <div className='field'>
-            <label htmlFor='folder-name-input'>Name</label>
-            <input
-              type='text'
-              id='folder-name-input'
-              name='folder'
-              onChange={event => this.setState({name:event.target.value})}
-            />
-            {!this.state.nameValid && (
-              <div>
-                <p>{this.state.validationMessage}</p>
-              </div>
-            )}
-          </div>
-          <div className='buttons'>
-            <button type='submit'>Add folder</button>
-          </div>
-        </NotefulForm>
-        {this.state.error && (
-          <div>
-            <p>{this.state.error}</p>
-          </div>
-        )}
-      </section>
-    );
-  }
+    render() {        
+        return (
+            <div className="add-folder-form">
+                <form onSubmit={e => this.handleSubmitAddFolder(e)}>
+                    <label htmlFor="add-folder">Folder name: </label>
+                    <input type="text" placeholder="name of folder" name="add-folder" value={this.state.name} onChange={e => this.onNameChange(e.target.value)} />
+                    <button type="submit" disabled={this.validateFolderName()}>Add this folder</button>
+                </form>
+                <button onClick={this.context.toggleFolderFormView}>Go Back</button>
+                {this.state.isTouched && <p className="folder-error">{this.validateFolderName()}</p>}
+            </div>
+        );
+    }
 }
 
-
+AddFolder.propTypes = {
+    addNewFolder: PropTypes.func.isRequired,
+    toggleFolderFormView: PropTypes.func.isRequired
+}
 
 export default AddFolder;

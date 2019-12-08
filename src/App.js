@@ -1,17 +1,52 @@
 import React from 'react';
-import { Route, Link, Redirect } from 'react-router-dom';
+import { Route, Link } from 'react-router-dom';
 import './App.css';
 import Home from './Home/Home';
 import NoteDetail from './NoteDetail/NoteDetail';
 import ApiContext from './ApiContext';
 import AddFolder from './AddFolder'
+import AddNote from './AddNote/AddNote';
+import AddNoteError from './AddNoteError/AddNoteError';
+import AddFolderError from './AddFolderError/AddFolderError';
+import NoteDetailError from './NoteDetailError/NoteDetailError';
+
 class App extends React.Component {
 
   state = {
     folders: [],
     notes: [],
     currentFolderId: null,
-    currentNoteId: null
+    currentNoteId: null,
+    isAddFormVisible: false,
+    isAddNoteVisible: false
+  }
+
+  toggleFolderFormView = () => {
+    let newView = !this.state.isAddFormVisible;
+    this.setState({
+      isAddFormVisible: newView,
+    });
+  }
+
+  toggleNoteFormView = () => {
+    let newView = !this.state.isAddNoteVisible;
+    this.setState({
+      isAddNoteVisible: newView,
+    });
+  }
+
+  addNewFolder = (folder) => {
+    let newFolders = [...this.state.folders, folder];
+    this.setState({
+      folders: newFolders
+    });
+  }
+
+  addNewNote = (note) => {
+    let newNotes = [...this.state.notes, note];
+    this.setState({
+      notes: newNotes
+    });
   }
 
   updateFolderId = (id) => {
@@ -26,38 +61,10 @@ class App extends React.Component {
     });
   }
 
-  handleDelete = (noteId, isNoteDetail) => {
-    console.log(`You clicked a delete button!`);
+  handleDelete = (noteId) => {
     let currentNotes = this.state.notes;
     let newNotes = currentNotes.filter(note => note.id !== noteId);
     this.setState({ notes: newNotes });
-  }
-
-  requestDelete = (noteId, callback) => {
-    fetch(`http://localhost:9090/notes/${noteId}`, {
-      method: 'DELETE',
-      headers: {
-        'content-type': 'application/json'
-      },
-    })
-    .then(res => {
-      if(!res.ok) {
-        return res.json().then(error => {
-          throw error
-        })
-      }
-      return res.json();
-    })
-    .then(data => {
-      // if (isNoteDetail) {
-      //   callback(noteId);
-      //   return <Redirect to='/' />;
-      // }
-      callback(noteId);
-    })
-    .catch(err => {
-      console.log(err);
-    });
   }
 
   componentDidMount() {
@@ -79,6 +86,40 @@ class App extends React.Component {
     .then(data => this.setState({ notes: data }))
     .catch(err => console.log(err));
   }
+
+  renderRoutes() {
+    return (
+      <>
+        {['/','/folder/:folderId'].map((path, i) => (
+          <Route exact path={path} key={i} component={Home} />
+        ))}
+        <NoteDetailError>
+          <Route
+              path='/note/:noteId'
+              component={NoteDetail}
+            />    
+        </NoteDetailError>
+      </>
+    );
+  }
+
+  renderPage() {
+    if(this.state.isAddFormVisible) {
+      return (
+      <AddFolderError>
+        <AddFolder addNewFolder={this.addNewFolder} toggleFolderFormView={this.toggleFolderFormView} />
+      </AddFolderError>
+      );
+    } else if (this.state.isAddNoteVisible) {
+      return (
+      <AddNoteError>
+        <AddNote addNewNote={this.addNewNote} toggleNoteFormView={this.toggleNoteFormView}/>
+      </AddNoteError>
+      );
+    } else {
+      return this.renderRoutes();
+    }
+  }
   
   render() {
     const noteContext = {
@@ -89,12 +130,9 @@ class App extends React.Component {
       currentFolderId: this.state.currentFolderId,
       currentNoteId: this.state.currentNoteId,
       handleDelete: this.handleDelete,
-      requestDelete: this.requestDelete
+      toggleFolderFormView: this.toggleFolderFormView,
+      toggleNoteFormView: this.toggleNoteFormView
     };
-
-    console.log(`App state`, this.state);
-
-    let noteExists = this.state.notes.find(note => note.id === this.state.currentNoteId) !== undefined;
 
     return (
       <ApiContext.Provider value={noteContext}>
@@ -103,21 +141,7 @@ class App extends React.Component {
             <h1 className="main-header" onClick={() => this.updateFolderId(null)}>Noteful</h1>
           </Link>
           <main className="main-container">
-            <Route
-              exact path='/'
-              component={Home}
-            />
-            <AddFolder/>
-            <Route
-              path='/folder/:folderId'
-              component={Home}
-            />
-
-            
-            <Route
-              path='/note/:noteId'
-              component={noteExists ? NoteDetail : Home}
-            />
+            {this.renderPage()}
           </main>
         </div>
       </ApiContext.Provider>
