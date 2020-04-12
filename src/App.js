@@ -3,20 +3,21 @@ import { Route, Link } from 'react-router-dom';
 import './App.css';
 import Home from './Home/Home';
 import NoteDetail from './NoteDetail/NoteDetail';
-import ApiContext from './ApiContext';
-import AddFolder from './AddFolder'
+import NoteContext from './NoteContext';
+import AddFolder from './AddFolder/AddFolder';
 import AddNote from './AddNote/AddNote';
+import NoteDetailError from './NoteDetailError/NoteDetailError';
 import AddNoteError from './AddNoteError/AddNoteError';
 import AddFolderError from './AddFolderError/AddFolderError';
-import NoteDetailError from './NoteDetailError/NoteDetailError';
+import { API_ENDPOINT } from './config';
 
 class App extends React.Component {
 
   state = {
     folders: [],
     notes: [],
-    currentFolderId: null,
-    currentNoteId: null,
+    currentFolderId: undefined,
+    currentNoteId: undefined,
     isAddFormVisible: false,
     isAddNoteVisible: false
   }
@@ -62,13 +63,14 @@ class App extends React.Component {
   }
 
   handleDelete = (noteId) => {
+    let numId = parseInt(noteId);
     let currentNotes = this.state.notes;
-    let newNotes = currentNotes.filter(note => note.id !== noteId);
+    let newNotes = currentNotes.filter(note => note.id !== numId);
     this.setState({ notes: newNotes });
   }
 
   componentDidMount() {
-    fetch('http://localhost:9090/folders').then(res => {
+    fetch(`${API_ENDPOINT}/folders`).then(res => {
       if (!res.ok) {
         throw new Error(`something went wrong`)
       }
@@ -77,7 +79,7 @@ class App extends React.Component {
     .then(data => this.setState({ folders: data }))
     .catch(err => console.log(err));
 
-    fetch('http://localhost:9090/notes').then(res => {
+    fetch(`${API_ENDPOINT}/notes`).then(res => {
       if (!res.ok) {
         throw new Error(`something went wrong`)
       }
@@ -135,7 +137,7 @@ class App extends React.Component {
     };
 
     return (
-      <ApiContext.Provider value={noteContext}>
+      <NoteContext.Provider value={noteContext}>
         <div className="App">
           <Link to="/" style={{ textDecoration: 'none' }}>
             <h1 className="main-header" onClick={() => this.updateFolderId(null)}>Noteful</h1>
@@ -144,7 +146,7 @@ class App extends React.Component {
             {this.renderPage()}
           </main>
         </div>
-      </ApiContext.Provider>
+      </NoteContext.Provider>
     );
   }
   
